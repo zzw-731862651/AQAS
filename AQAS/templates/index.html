@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css"
+          integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+</head>
+<body>
+<audio src="" autoplay controls id="player"></audio>
+
+<button onclick="start_reco()" class="btn btn-success">开始废话</button>
+
+<button onclick="stop_reco()" class="btn btn-success">发送语音</button>
+</body>
+<script src="/static/Recorder.js"></script>
+<script type="application/javascript">
+    var get_file = "http://192.168.11.41:9527/get_file/";
+    var ws = new WebSocket("ws://192.168.11.41:9527/index/zilong");
+    var reco = null;
+    var audio_context = new AudioContext();
+    navigator.getUserMedia = (navigator.getUserMedia ||
+        navigator.webkitGetUserMedia ||
+        navigator.mozGetUserMedia ||
+        navigator.msGetUserMedia);
+
+    navigator.getUserMedia({audio: true}, create_stream, function (err) {
+        console.log(err)
+    });
+
+    function create_stream(user_media) {
+        var stream_input = audio_context.createMediaStreamSource(user_media);
+        reco = new Recorder(stream_input);
+    }
+
+    function start_reco() {
+        reco.record();
+    }
+
+    function stop_reco() {
+        reco.stop();
+        get_audio();
+        reco.clear();
+    }
+
+    function get_audio() {
+        reco.exportWAV(function (wav_file) {
+            ws.send(wav_file);
+        })
+    }
+
+    ws.onmessage = function (data) {
+        // console.log(get_file + data.data);
+        document.getElementById("player").src = get_file + data.data;
+    }
+
+
+</script>
+</html>
